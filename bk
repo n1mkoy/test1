@@ -1,0 +1,112 @@
+import tkinter as tk
+from tkinter import messagebox
+import random
+
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.health = 100
+        self.block = None
+
+    def attack(self, target, part):
+        if target.block == part:
+            result = f"{target.name} заблокировал удар по {part}!"
+        else:
+            damage = random.randint(5, 15)
+            target.health -= damage
+            result = f"{self.name} ударил {target.name} по {part} на {damage} урона!"
+        return result
+
+    def block_part(self, part):
+        self.block = part
+        return f"{self.name} блокирует {part}!"
+
+    def is_alive(self):
+        return self.health > 0
+
+class CombatGame:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Боевая игра")
+
+        self.player1 = Player("Игрок 1")
+        self.player2 = Player("Игрок 2")
+        self.players = [self.player1, self.player2]
+        self.current_player_index = 0
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.health_label1 = tk.Label(self.root, text=f"{self.player1.name} Здоровье: {self.player1.health}")
+        self.health_label1.grid(row=0, column=0, padx=10, pady=10)
+
+        self.health_label2 = tk.Label(self.root, text=f"{self.player2.name} Здоровье: {self.player2.health}")
+        self.health_label2.grid(row=0, column=1, padx=10, pady=10)
+
+        self.attack_var = tk.StringVar(value="голова")
+        self.block_var = tk.StringVar(value="голова")
+
+        tk.Label(self.root, text="Выберите атаку:").grid(row=1, column=0, padx=10, pady=5)
+        tk.Label(self.root, text="Выберите блок:").grid(row=1, column=1, padx=10, pady=5)
+
+        attacks = ["голова", "тело", "ноги", "руки"]
+        blocks = ["голова", "тело", "ноги", "руки"]
+
+        self.attack_options = []
+        self.block_options = []
+
+        for i, part in enumerate(attacks):
+            rb = tk.Radiobutton(self.root, text=part.capitalize(), variable=self.attack_var, value=part)
+            rb.grid(row=2+i, column=0, padx=10, pady=5)
+            self.attack_options.append(rb)
+
+        for i, part in enumerate(blocks):
+            rb = tk.Radiobutton(self.root, text=part.capitalize(), variable=self.block_var, value=part)
+            rb.grid(row=2+i, column=1, padx=10, pady=5)
+            self.block_options.append(rb)
+
+        self.submit_button = tk.Button(self.root, text="Подтвердить", command=self.process_turn)
+        self.submit_button.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+
+        self.output_text = tk.Text(self.root, height=10, width=50)
+        self.output_text.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
+        self.output_text.config(state=tk.DISABLED)
+
+    def process_turn(self):
+        current_player = self.players[self.current_player_index]
+        opponent = self.players[1 - self.current_player_index]
+
+        attack_part = self.attack_var.get()
+        block_part = self.block_var.get()
+
+        result_block = current_player.block_part(block_part)
+        result_attack = current_player.attack(opponent, attack_part)
+
+        self.update_health()
+        self.log_result(result_block)
+        self.log_result(result_attack)
+        self.check_winner()
+
+        self.current_player_index = 1 - self.current_player_index
+
+    def update_health(self):
+        self.health_label1.config(text=f"{self.player1.name} Здоровье: {self.player1.health}")
+        self.health_label2.config(text=f"{self.player2.name} Здоровье: {self.player2.health}")
+
+    def log_result(self, result):
+        self.output_text.config(state=tk.NORMAL)
+        self.output_text.insert(tk.END, result + "\n")
+        self.output_text.config(state=tk.DISABLED)
+
+    def check_winner(self):
+        if not self.player1.is_alive():
+            messagebox.showinfo("Игра окончена", f"{self.player2.name} победил!")
+            self.root.quit()
+        elif not self.player2.is_alive():
+            messagebox.showinfo("Игра окончена", f"{self.player1.name} победил!")
+            self.root.quit()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    game = CombatGame(root)
+    root.mainloop()
